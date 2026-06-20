@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/db";
 import Notification from "@/lib/models/Notification";
 import User from "@/lib/models/User";
@@ -27,7 +28,8 @@ export async function GET(req: NextRequest) {
   for (const n of overdue) {
     n.escalated = true;
     n.priority = "Critical";
-    n.recipientUserIds = [...new Set([...n.recipientUserIds.map(String), ...leadershipIds.map(String)])] as any;
+    const mergedIds = [...new Set([...n.recipientUserIds.map(String), ...leadershipIds.map(String)])];
+    n.recipientUserIds = mergedIds.map((id) => new mongoose.Types.ObjectId(id));
     await n.save();
 
     await createAuditLog({

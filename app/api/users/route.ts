@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Email already registered" }, { status: 409 });
     }
 
-    const employeeId = await (User as any).generateEmployeeId();
+    const employeeId = await User.generateEmployeeId();
     const tempPassword = password || generateTemporaryPassword();
     const passwordHash = await hashPassword(tempPassword);
 

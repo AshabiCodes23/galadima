@@ -8,24 +8,37 @@ import Modal from "@/components/Modal";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
 
+interface DepartmentHead {
+  _id: string;
+  name: string;
+}
+
+interface Department {
+  _id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  head?: DepartmentHead;
+  employeeCount?: number;
+}
+
 export default function DepartmentsPage() {
   const { role } = useAuth();
   const canManage = role === "super_admin" || role === "hr_admin";
 
-  const [departments, setDepartments] = useState<any[]>([]);
-  const [heads, setHeads] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [heads, setHeads] = useState<DepartmentHead[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<any>(null);
+  const [editing, setEditing] = useState<Department | null>(null);
   const [form, setForm] = useState({ name: "", description: "", headId: "" });
   const [saving, setSaving] = useState(false);
 
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Department | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   async function load() {
-    setLoading(true);
     try {
       const res = await fetch("/api/departments");
       const json = await res.json();
@@ -50,7 +63,7 @@ export default function DepartmentsPage() {
     setFormOpen(true);
   }
 
-  function openEdit(dept: any) {
+  function openEdit(dept: Department) {
     setEditing(dept);
     setForm({ name: dept.name, description: dept.description || "", headId: dept.head?._id || "" });
     setFormOpen(true);
@@ -185,7 +198,9 @@ export default function DepartmentsPage() {
             </div>
             <div className="form-group">
               <label className="form-label">Department Head</label>
-              <select className="form-select" value={form.headId} onChange={(e) => setForm({ ...form, headId: e.target.value })}>
+              <select
+              title="Select Option"
+               className="form-select" value={form.headId} onChange={(e) => setForm({ ...form, headId: e.target.value })}>
                 <option value="">No head assigned</option>
                 {heads.map((h) => <option key={h._id} value={h._id}>{h.name}</option>)}
               </select>

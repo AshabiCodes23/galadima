@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import User from "@/lib/models/User";
+import type { IUser } from "@/lib/models/User";
 import Notification from "@/lib/models/Notification";
 import PushSubscription from "@/lib/models/PushSubscription";
 import { createAuditLog } from "@/lib/audit";
@@ -32,7 +33,7 @@ async function findByDepartments(departments: string[]) {
   return User.find({ department: { $in: departments }, isActive: true });
 }
 
-function dedupe(users: any[]) {
+function dedupe(users: IUser[]) {
   const seen = new Set<string>();
   return users.filter((u) => {
     const id = u._id.toString();
@@ -43,7 +44,7 @@ function dedupe(users: any[]) {
 }
 
 export async function dispatchNotification(params: DispatchParams) {
-  let recipients: any[] = [];
+  let recipients: IUser[] = [];
   let deliveryMode: "group" | "targeted" = "group";
 
   const hasTargeting = (params.mentionedUsers?.length || 0) > 0 || (params.mentionedTeams?.length || 0) > 0;

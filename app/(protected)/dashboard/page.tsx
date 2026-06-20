@@ -9,9 +9,68 @@ import PerformanceBar from "@/components/PerformanceBar";
 import EmptyState from "@/components/EmptyState";
 import { formatDate } from "@/lib/constants";
 
+interface DueKPI {
+  _id: string;
+  name: string;
+  status: string;
+  targetValue: number;
+  dueDate: string;
+}
+
+interface EmployeeData {
+  personalScore: number;
+  assignedKPIs: number;
+  completedKPIs: number;
+  overdueKPIs: number;
+  dueKPIs: DueKPI[];
+}
+
+interface TeamMember {
+  employee: { id: string; name: string };
+  score: number;
+  completedKPIs: number;
+  totalKPIs: number;
+}
+
+interface DepartmentData {
+  departmentScore: number;
+  totalMembers: number;
+  openKPIs: number;
+  missedKPIs: number;
+  teamPerformance: TeamMember[];
+}
+
+interface DepartmentRanking {
+  department: string;
+  score: number;
+  completionRate: number;
+}
+
+interface PerformerEntry {
+  employee: { id: string; name: string; department: string };
+  score: number;
+}
+
+interface ExecutiveData {
+  companyScore: number;
+  totalEmployees: number;
+  activeKPIs: number;
+  overdueKPIs: number;
+  kpiCompletionRate: number;
+  completedKPIs: number;
+  departmentRankings: DepartmentRanking[];
+  topPerformers: PerformerEntry[];
+  underperformers: PerformerEntry[];
+}
+
+type DashboardResult =
+  | { view: "employee"; data: EmployeeData }
+  | { view: "department"; data: DepartmentData }
+  | { view: "executive"; data: ExecutiveData };
+
 export default function DashboardPage() {
   const { name } = useAuth();
-  const [result, setResult] = useState<{ view: string; data: any } | null>(null);
+  const [result, setResult] = useState<DashboardResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -56,7 +115,7 @@ export default function DashboardPage() {
   );
 }
 
-function EmployeeDashboard({ data }: { data: any }) {
+function EmployeeDashboard({ data }: { data: EmployeeData }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div className="dashboard-score-row">
@@ -86,7 +145,7 @@ function EmployeeDashboard({ data }: { data: any }) {
             <EmptyState title="Nothing due" text="You're all caught up — no pending or in-progress KPIs right now." />
           ) : (
             <div className="dashboard-kpi-grid">
-              {data.dueKPIs.map((kpi: any) => (
+              {data.dueKPIs.map((kpi: DueKPI) => (
                 <div key={kpi._id} className="card">
                   <div className="card-body">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: 8 }}>
@@ -105,7 +164,7 @@ function EmployeeDashboard({ data }: { data: any }) {
   );
 }
 
-function DepartmentDashboard({ data }: { data: any }) {
+function DepartmentDashboard({ data }: { data: DepartmentData }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div className="dashboard-score-row">
@@ -141,7 +200,7 @@ function DepartmentDashboard({ data }: { data: any }) {
                 <tr><th>Employee</th><th>Score</th><th>Completed</th><th>Total KPIs</th></tr>
               </thead>
               <tbody>
-                {data.teamPerformance.map((member: any) => (
+                {data.teamPerformance.map((member: TeamMember) => (
                   <tr key={member.employee.id}>
                     <td>{member.employee.name}</td>
                     <td>{member.score}%</td>
@@ -158,7 +217,7 @@ function DepartmentDashboard({ data }: { data: any }) {
   );
 }
 
-function ExecutiveDashboard({ data }: { data: any }) {
+function ExecutiveDashboard({ data }: { data: ExecutiveData }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <div className="dashboard-stats-grid">
@@ -196,7 +255,7 @@ function ExecutiveDashboard({ data }: { data: any }) {
               <table className="data-table">
                 <thead><tr><th>Department</th><th>Score</th><th>Completion</th></tr></thead>
                 <tbody>
-                  {data.departmentRankings.map((dept: any) => (
+                  {data.departmentRankings.map((dept: DepartmentRanking) => (
                     <tr key={dept.department}>
                       <td>{dept.department}</td>
                       <td>{dept.score}%</td>
@@ -217,7 +276,7 @@ function ExecutiveDashboard({ data }: { data: any }) {
                 <EmptyState title="No data yet" text="Top performers show up once KPIs are approved." />
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {data.topPerformers.map((p: any) => (
+                  {data.topPerformers.map((p: PerformerEntry) => (
                     <div key={p.employee.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem" }}>
                       <span>{p.employee.name} <span style={{ color: "var(--color-neutral-400)" }}>· {p.employee.department}</span></span>
                       <strong>{p.score}%</strong>
@@ -235,7 +294,7 @@ function ExecutiveDashboard({ data }: { data: any }) {
                 <EmptyState title="Nobody flagged" text="Underperformers show up here once there's enough KPI history." />
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {data.underperformers.map((p: any) => (
+                  {data.underperformers.map((p: PerformerEntry) => (
                     <div key={p.employee.id} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem" }}>
                       <span>{p.employee.name} <span style={{ color: "var(--color-neutral-400)" }}>· {p.employee.department}</span></span>
                       <strong style={{ color: "var(--color-primary)" }}>{p.score}%</strong>

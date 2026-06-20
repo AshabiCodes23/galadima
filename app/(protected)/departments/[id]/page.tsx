@@ -6,12 +6,35 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import RoleBadge from "@/components/RoleBadge";
 import EmptyState from "@/components/EmptyState";
+import type { UserRole } from "@/lib/types";
+
+interface DepartmentHead {
+  name: string;
+  email: string;
+  employeeId: string;
+}
+
+interface DepartmentDetail {
+  _id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  head?: DepartmentHead;
+}
+
+interface DepartmentEmployee {
+  _id: string;
+  name: string;
+  employeeId: string;
+  role: UserRole;
+  email: string;
+}
 
 export default function DepartmentDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [department, setDepartment] = useState<any>(null);
+  const [department, setDepartment] = useState<DepartmentDetail | null>(null);
   const [employeeCount, setEmployeeCount] = useState(0);
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<DepartmentEmployee[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

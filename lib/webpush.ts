@@ -1,5 +1,6 @@
 import webpush from "web-push";
 import PushSubscription from "@/lib/models/PushSubscription";
+import type { IPushSubscription } from "@/lib/models/PushSubscription";
 
 const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const privateKey = process.env.VAPID_PRIVATE_KEY;
@@ -15,7 +16,12 @@ interface PushPayload {
   url?: string;
 }
 
-export async function sendPushToSubscriptions(subscriptions: any[], payload: PushPayload): Promise<number> {
+interface WebPushError {
+  statusCode?: number;
+  message?: string;
+}
+
+export async function sendPushToSubscriptions(subscriptions: IPushSubscription[], payload: PushPayload): Promise<number> {
   if (!publicKey || !privateKey) {
     console.warn("[webpush] VAPID keys missing — skipping push send");
     return 0;
@@ -30,12 +36,13 @@ export async function sendPushToSubscriptions(subscriptions: any[], payload: Pus
           JSON.stringify({ title: payload.title, body: payload.body, icon: "/icon-192x192.png", priority: payload.priority, url: payload.url || "/alerts" })
         );
         sent += 1;
-      } catch (err: any) {
+      } catch (err) {
         // 404/410 = the browser unsubscribed and never told us — clean it up.
-        if (err.statusCode === 404 || err.statusCode === 410) {
+        const pushErr = err as WebPushError;
+        if (pushErr.statusCode === 404 || pushErr.statusCode === 410) {
           await PushSubscription.findByIdAndDelete(sub._id);
         } else {
-          console.error("[webpush] send failed:", err.message);
+          console.error("[webpush] send failed:", pushErr.message);
         }
       }
     })

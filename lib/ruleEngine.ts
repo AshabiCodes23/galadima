@@ -18,7 +18,7 @@ const mapFreshdeskPriority = (raw: unknown): NotificationPriority | null => {
   return map[typeof raw === "string" ? raw.toLowerCase() : String(raw)] || null;
 };
 
-type RuleMap = Record<string, (data: Record<string, any>) => RuleResult>;
+type RuleMap = Record<string, (data: Record<string, unknown>) => RuleResult>;
 
 const freshserviceRules: RuleMap = {
   project_due_soon: (d) => ({ title: "Project Due Soon", message: `"${d.project_name}" is due in ${d.days_remaining} day(s). Ensure all milestones are on track.`, priority: "High", group: "project_managers" }),
@@ -64,7 +64,7 @@ const RULES_BY_SOURCE: Record<string, RuleMap> = {
   Freshdesk: freshdeskRules,
 };
 
-export function evaluateRule(source: NotificationSource, eventType: string, data: Record<string, any>): RuleResult | null {
+export function evaluateRule(source: NotificationSource, eventType: string, data: Record<string, unknown>): RuleResult | null {
   const builder = RULES_BY_SOURCE[source]?.[eventType];
   return builder ? builder(data) : null;
 }

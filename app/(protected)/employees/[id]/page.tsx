@@ -8,11 +8,30 @@ import RoleBadge from "@/components/RoleBadge";
 import StatusBadge from "@/components/StatusBadge";
 import EmptyState from "@/components/EmptyState";
 import { formatDate } from "@/lib/constants";
+import type { UserRole } from "@/lib/types";
+
+interface Employee {
+  _id: string;
+  name: string;
+  employeeId: string;
+  email: string;
+  department: string;
+  role: UserRole;
+  isActive: boolean;
+}
+
+interface EmployeeKPI {
+  _id: string;
+  name: string;
+  status: string;
+  achievementPercent?: number;
+  dueDate: string;
+}
 
 export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [employee, setEmployee] = useState<any>(null);
-  const [kpis, setKpis] = useState<any[]>([]);
+  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [kpis, setKpis] = useState<EmployeeKPI[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

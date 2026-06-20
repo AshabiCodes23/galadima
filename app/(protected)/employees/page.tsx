@@ -1,15 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { useAuth } from "@/providers/AuthProvider";
 import { ROLE_LABELS } from "@/lib/constants";
 import { DEPARTMENTS } from "@/lib/types";
+import type { UserRole } from "@/lib/types";
 import Modal from "@/components/Modal";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
 import RoleBadge from "@/components/RoleBadge";
+
+interface Employee {
+  _id: string;
+  name: string;
+  email: string;
+  employeeId: string;
+  phone?: string;
+  role: UserRole;
+  department: string;
+  isActive: boolean;
+}
 
 const EMPTY_CREATE_FORM = { name: "", email: "", phone: "", role: "staff", department: "" };
 
@@ -19,7 +31,7 @@ export default function EmployeesPage() {
   const canChangeRole = myRole === "super_admin";
   const canDelete = myRole === "super_admin";
 
-  const [employees, setEmployees] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
@@ -29,17 +41,17 @@ export default function EmployeesPage() {
   const [createForm, setCreateForm] = useState(EMPTY_CREATE_FORM);
   const [creating, setCreating] = useState(false);
 
-  const [manageTarget, setManageTarget] = useState<any>(null);
+  const [manageTarget, setManageTarget] = useState<Employee | null>(null);
   const [manageForm, setManageForm] = useState({ name: "", phone: "", department: "", role: "staff", isActive: true });
   const [savingManage, setSavingManage] = useState(false);
   const [resetting, setResetting] = useState(false);
 
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const [newCredentials, setNewCredentials] = useState<{ name: string; employeeId: string; temporaryPassword: string } | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -52,14 +64,14 @@ export default function EmployeesPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [search, roleFilter, deptFilter]);
 
   useEffect(() => {
     const timer = setTimeout(load, 300);
     return () => clearTimeout(timer);
-  }, [search, roleFilter, deptFilter]);
+  }, [load]);
 
-  function openManage(emp: any) {
+  function openManage(emp: Employee) {
     setManageTarget(emp);
     setManageForm({ name: emp.name, phone: emp.phone || "", department: emp.department, role: emp.role, isActive: emp.isActive });
   }
@@ -180,12 +192,16 @@ export default function EmployeesPage() {
 
       <div className="filter-bar">
         <input className="form-input" placeholder="Search name, email, or ID…" value={search} onChange={(e) => setSearch(e.target.value)} />
-        <select className="form-select" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+        <select
+         title="Role"
+          className="form-select" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
           <option value="">All roles</option>
           {Object.entries(ROLE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
         {canManage && (
-          <select className="form-select" value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)}>
+          <select
+           title="Department"
+            className="form-select" value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)}>
             <option value="">All departments</option>
             {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
@@ -241,25 +257,35 @@ export default function EmployeesPage() {
           <form onSubmit={handleCreate}>
             <div className="form-group">
               <label className="form-label required">Full Name</label>
-              <input className="form-input" value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} />
+              <input
+              title="Full Name"
+               className="form-input" value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} />
             </div>
             <div className="form-group">
               <label className="form-label required">Work Email</label>
-              <input type="email" className="form-input" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} />
+              <input
+              title="Work Email"
+               type="email" className="form-input" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} />
             </div>
             <div className="form-group">
               <label className="form-label">Phone</label>
-              <input className="form-input" value={createForm.phone} onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })} />
+              <input
+              title="Phone"
+               className="form-input" value={createForm.phone} onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })} />
             </div>
             <div className="form-group">
               <label className="form-label required">Role</label>
-              <select className="form-select" value={createForm.role} onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}>
+              <select
+              title="Role"
+               className="form-select" value={createForm.role} onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}>
                 {Object.entries(ROLE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </div>
             <div className="form-group">
               <label className="form-label required">Department</label>
-              <select className="form-select" value={createForm.department} onChange={(e) => setCreateForm({ ...createForm, department: e.target.value })}>
+              <select
+              title="Department"
+               className="form-select" value={createForm.department} onChange={(e) => setCreateForm({ ...createForm, department: e.target.value })}>
                 <option value="">Select department</option>
                 {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
@@ -285,21 +311,29 @@ export default function EmployeesPage() {
         >
           <div className="form-group">
             <label className="form-label">Full Name</label>
-            <input className="form-input" value={manageForm.name} onChange={(e) => setManageForm({ ...manageForm, name: e.target.value })} />
+            <input
+             title="Full Name"
+              className="form-input" value={manageForm.name} onChange={(e) => setManageForm({ ...manageForm, name: e.target.value })} />
           </div>
           <div className="form-group">
             <label className="form-label">Phone</label>
-            <input className="form-input" value={manageForm.phone} onChange={(e) => setManageForm({ ...manageForm, phone: e.target.value })} />
+            <input
+             title="Phone"
+              className="form-input" value={manageForm.phone} onChange={(e) => setManageForm({ ...manageForm, phone: e.target.value })} />
           </div>
           <div className="form-group">
             <label className="form-label">Department</label>
-            <select className="form-select" value={manageForm.department} onChange={(e) => setManageForm({ ...manageForm, department: e.target.value })}>
+            <select
+             title="Department"
+              className="form-select" value={manageForm.department} onChange={(e) => setManageForm({ ...manageForm, department: e.target.value })}>
               {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
           </div>
           <div className="form-group">
             <label className="form-label">Role</label>
-            <select className="form-select" value={manageForm.role} disabled={!canChangeRole} onChange={(e) => setManageForm({ ...manageForm, role: e.target.value })}>
+            <select
+             title="Role"
+              className="form-select" value={manageForm.role} disabled={!canChangeRole} onChange={(e) => setManageForm({ ...manageForm, role: e.target.value })}>
               {Object.entries(ROLE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
             {!canChangeRole && <p className="form-hint">Only a Super Admin can change roles.</p>}

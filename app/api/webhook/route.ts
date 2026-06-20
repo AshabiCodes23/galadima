@@ -5,6 +5,13 @@ import { dispatchNotification } from "@/lib/notify";
 import { verifyWebhookSignature } from "@/lib/webhookAuth";
 import type { NotificationSource } from "@/lib/types";
 
+interface WebhookPayload {
+  source?: string;
+  event_type?: string;
+  event?: string;
+  data?: Record<string, unknown>;
+}
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const signature = req.headers.get("x-freshworks-signature");
@@ -14,15 +21,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: verification.reason }, { status: 401 });
   }
 
-  let body: any;
+  let body: WebhookPayload;
   try {
-    body = JSON.parse(rawBody);
+    body = JSON.parse(rawBody) as WebhookPayload;
   } catch {
     return NextResponse.json({ success: false, error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const source: NotificationSource = body.source || "Freshsales";
-  const eventType: string = body.event_type || body.event;
+  const source: NotificationSource = (body.source as NotificationSource) || "Freshsales";
+  const eventType: string = body.event_type || body.event || "";
   const data = body.data || {};
 
   if (!source || !eventType) {
@@ -43,7 +50,7 @@ export async function POST(req: NextRequest) {
     source,
     eventType,
     group: rule.group,
-    assigneeEmail: rule.assigneeField ? data[rule.assigneeField] : null,
+    assigneeEmail: rule.assigneeField && typeof data[rule.assigneeField] === "string" ? (data[rule.assigneeField] as string) : null,
     includeSupervisor: rule.includeSupervisor,
     mentionedUsers: normalizeList(data.mentioned_users),
     mentionedTeams: normalizeList(data.mentioned_teams),

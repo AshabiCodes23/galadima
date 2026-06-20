@@ -37,6 +37,10 @@ function PushNotificationManager() {
 
   
   useEffect(() => {
+    // Deliberate "mounted" gate to avoid SSR/CSR hydration mismatch —
+    // this component must render identically on the server and on first
+    // client paint, then switch to client-only state once mounted.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
   }, [])
 
@@ -45,6 +49,8 @@ function PushNotificationManager() {
   useEffect(() => {
     if (!mounted) return
 
+    // Browser feature detection must happen client-side only, after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsSupported(
       'serviceWorker' in navigator &&
         'PushManager' in window
@@ -180,6 +186,9 @@ function InstallPrompt() {
     useState(false)
 
   useEffect(() => {
+    // Same deliberate "mounted" gate as above, plus client-only device
+    // detection (userAgent / matchMedia aren't available during SSR).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
 
     setIsIOS(

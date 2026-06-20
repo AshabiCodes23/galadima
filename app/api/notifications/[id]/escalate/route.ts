@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/db";
 import Notification from "@/lib/models/Notification";
 import User from "@/lib/models/User";
@@ -19,7 +20,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const leadership = await User.find({ role: { $in: ["department_head", "super_admin"] }, isActive: true }).select("_id");
   notification.escalated = true;
   notification.priority = "Critical";
-  notification.recipientUserIds = [...new Set([...notification.recipientUserIds.map(String), ...leadership.map((u) => u._id.toString())])] as any;
+  const mergedIds = [...new Set([...notification.recipientUserIds.map(String), ...leadership.map((u) => u._id.toString())])];
+  notification.recipientUserIds = mergedIds.map((mid) => new mongoose.Types.ObjectId(mid));
   await notification.save();
 
   await createAuditLog({
