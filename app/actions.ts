@@ -1,64 +1,48 @@
-'use server'
+"use server";
 
-import webpush from 'web-push'
+import webpush from "web-push";
+import { connectDB } from "@/lib/db";
+import PushSubscription from "@/lib/models/PushSubscription";
+import { getCurrentUser } from "@/lib/auth";
+import { sendPushToSubscriptions } from "@/lib/webpush";
 
-const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-const privateKey = process.env.VAPID_PRIVATE_KEY
+const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+const privateKey = process.env.VAPID_PRIVATE_KEY;
 
-if (!publicKey || !privateKey) {
-  throw new Error('Missing VAPID keys')
+if (publicKey && privateKey) {
+  webpush.setVapidDetails("mailto:alerts@landbookbyharmony.com", publicKey, privateKey);
 }
 
-webpush.setVapidDetails(
-  'mailto:your-email@example.com',
-  publicKey,
-  privateKey
-)
-
-type StoredSubscription = webpush.PushSubscription
-
-let subscription: StoredSubscription | null = null
+type StoredSubscription = webpush.PushSubscription;
 
 export async function subscribeUser(sub: StoredSubscription) {
-  subscription = sub
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: "Not logged in" };
 
-  // Production:
-  // Save to database here
+  await connectDB();
+  await PushSubscription.findOneAndUpdate(
+    { endpoint: sub.endpoint },
+    { user: user._id, endpoint: sub.endpoint, keys: { p256dh: sub.keys!.p256dh, auth: sub.keys!.auth } },
+    { upsert: true, new: true }
+  );
 
-  return { success: true }
+  return { success: true };
 }
 
-export async function unsubscribeUser() {
-  subscription = null
-
-  // Production:
-  // Remove from database here
-
-  return { success: true }
+export async function unsubscribeUser(endpoint: string) {
+  await connectDB();
+  await PushSubscription.deleteOne({ endpoint });
+  return { success: true };
 }
 
 export async function sendNotification(message: string) {
-  if (!subscription) {
-    throw new Error('No subscription available')
-  }
+  const user = await getCurrentUser();
+  if (!user) return { success: false, error: "Not logged in" };
 
-  try {
-    await webpush.sendNotification(
-      subscription,
-      JSON.stringify({
-        title: 'Test Notification',
-        body: message,
-        icon: '/icon-192x192.png',
-      })
-    )
+  await connectDB();
+  const subscriptions = await PushSubscription.find({ user: user._id });
+  if (!subscriptions.length) return { success: false, error: "No subscription available" };
 
-    return { success: true }
-  } catch (error) {
-    console.error('Error sending push notification:', error)
-
-    return {
-      success: false,
-      error: 'Failed to send notification',
-    }
-  }
+  const sent = await sendPushToSubscriptions(subscriptions, { title: "Test Notification", body: message });
+  return { success: sent > 0, sent };
 }

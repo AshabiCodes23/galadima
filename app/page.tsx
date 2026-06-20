@@ -103,10 +103,11 @@ function PushNotificationManager() {
   async function unsubscribeFromPush() {
     if (!subscription) return
 
+   const endpoint = subscription.endpoint
     await subscription.unsubscribe()
     setSubscription(null)
 
-    await unsubscribeUser()
+    await unsubscribeUser(endpoint)
   }
 
   async function sendTestNotification() {

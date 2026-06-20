@@ -1,8 +1,9 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import type { UserRole } from "@/lib/types";
 
-// The four roles we agreed on. department_head covers what used to be
-// "team lead" and "manager" too — one tier, not three.
-export type UserRole = "super_admin" | "department_head" | "staff" | "hr_admin";
+
+
+export type { UserRole };
 
 export interface IUser extends Document {
   employeeId: string;
@@ -41,6 +42,16 @@ const UserSchema = new Schema<IUser>(
 
 // Mongoose re-uses the model if it's already compiled — stops Next.js's
 // hot-reload from throwing "model already exists" errors.
-const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+interface IUserModel extends Model<IUser> {
+  generateEmployeeId(): Promise<string>;
+}
+
+UserSchema.statics.generateEmployeeId = async function (): Promise<string> {
+  const count = await this.countDocuments();
+  const padded = String(count + 1).padStart(4, "0");
+  return `HG-${padded}`;
+};
+
+const User = (mongoose.models.User as IUserModel) || mongoose.model<IUser, IUserModel>("User", UserSchema);
 
 export default User;

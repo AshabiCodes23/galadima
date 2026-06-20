@@ -1,22 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 
-// Next.js 16 renamed "middleware.ts" to "proxy.ts" — same job, same
-// matcher config. It now runs on the full Node.js runtime by default,
-// which is exactly what jsonwebtoken needs, so there's nothing extra to
-// configure here.
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/employees/:path*", "/departments/:path*", "/kpis/:path*", "/submissions/:path*", "/alerts/:path*", "/audit/:path*", "/broadcast/:path*", "/profile/:path*", "/admin/:path*", "/login"],
 };
 
 const COOKIE_NAME = "galadima_token";
+const PROTECTED_PREFIXES = ["/dashboard", "/employees", "/departments", "/kpis", "/submissions", "/alerts", "/audit", "/broadcast", "/profile", "/admin"];
 
 export function proxy(request: NextRequest) {
   const token = request.cookies.get(COOKIE_NAME)?.value;
   const session = token ? verifyToken(token) : null;
   const isOnLoginPage = request.nextUrl.pathname === "/login";
+  const isOnProtectedPage = PROTECTED_PREFIXES.some((p) => request.nextUrl.pathname.startsWith(p));
 
-  if (!session && !isOnLoginPage) {
+  if (!session && isOnProtectedPage) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
